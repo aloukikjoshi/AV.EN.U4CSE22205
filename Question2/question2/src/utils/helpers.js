@@ -1,7 +1,7 @@
 /**
  * Calculate standard deviation of an array of values
  * @param {Array<number>} values - Array of numeric values
- * @param {number} mean - Mean value (if already calculated)
+ * @param {number} mean - Mean value
  * @returns {number} Standard deviation
  */
 export const calculateStdDev = (values, mean) => {

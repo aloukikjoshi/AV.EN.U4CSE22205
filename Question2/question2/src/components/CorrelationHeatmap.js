@@ -48,7 +48,7 @@ const CorrelationHeatmap = ({ correlationsData, tickers, onTickerHover }) => {
     onTickerHover(null, null);
   };
 
-  // Cell size based on number of tickers
+  // Cell size based on number of tickers which is 2 otherwise error from backend
   const cellSize = 70;
   const fontSize = tickers.length > 6 ? '0.7rem' : '0.9rem';
 
@@ -108,7 +108,7 @@ const CorrelationHeatmap = ({ correlationsData, tickers, onTickerHover }) => {
 
               {/* Correlation cells */}
               {tickers.map((colTicker, j) => {
-                // Get correlation value from data
+                // Correlation value from data using backend API
                 const corrValue = correlationsData[i][j] || 0;
                 const bgColor = getCorrelationColor(corrValue);
                 const textColor = getTextColor(bgColor);

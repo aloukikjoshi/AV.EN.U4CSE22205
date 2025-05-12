@@ -62,7 +62,7 @@ app.get('/stocks/:ticker', async (req, res) => {
 
   try {
     // Fetch price history from test server
-    // Correct path: /evaluation-service/stocks/:ticker?minutes=<m>
+    // path: /evaluation-service/stocks/:ticker?minutes=<m>
     const history = await fetchJSON(`/evaluation-service/stocks/${ticker}?minutes=${minutes}`);
 
     if (!Array.isArray(history)) {
@@ -119,7 +119,7 @@ app.get('/stockcorrelation', async (req, res) => {
       return res.status(500).json({ error: 'Invalid data from test server' });
     }
 
-    // Align and compute correlation
+    // Compute correlation
     const count = Math.min(histA.length, histB.length);
     const pricesA = histA.slice(0, count).map(e => parseFloat(e.price));
     const pricesB = histB.slice(0, count).map(e => parseFloat(e.price));
@@ -137,6 +137,4 @@ app.get('/stockcorrelation', async (req, res) => {
     res.status(500).json({ error: 'Unable to fetch correlation data' });
   }
 });
-
-// Start server
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));

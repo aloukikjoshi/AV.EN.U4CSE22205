@@ -38,14 +38,14 @@ function HeatmapPage() {
   const [stockStats, setStockStats] = useState(null);
   const [selectedTickers, setSelectedTickers] = useState(availableTickers.slice(0, 5));
 
-  // Standard deviation calculation
+  // Standard deviation
   const calculateStdDev = (prices, avg) => {
     if (!prices || prices.length === 0) return 0;
     const variance = prices.reduce((sum, price) => sum + Math.pow(price - avg, 2), 0) / prices.length;
     return Math.sqrt(variance);
   };
 
-  // Handle ticker hover in heatmap
+  // Handle function for ticker hover in heatmap
   const handleTickerHover = (ticker1, ticker2) => {
     if (ticker1) {
       const stockData = stocksData[ticker1];
@@ -69,7 +69,7 @@ function HeatmapPage() {
     setSelectedStock2(ticker2);
   };
 
-  // Fetch all pairwise correlations
+  // Fetching correlations function
   const fetchAllCorrelations = async () => {
     if (selectedTickers.length < 2) {
       setError('Please select at least 2 tickers');
@@ -80,23 +80,20 @@ function HeatmapPage() {
     setError('');
     
     try {
-      // Initialize the correlation matrix
       const matrix = Array(selectedTickers.length).fill().map(() => Array(selectedTickers.length).fill(0));
       const stocksDataObj = {};
-      
-      // Fetch all pairwise correlations
       for (let i = 0; i < selectedTickers.length; i++) {
         for (let j = i; j < selectedTickers.length; j++) {
           if (i === j) {
             // A stock perfectly correlates with itself
             matrix[i][j] = 1.0;
           } else {
-            // Fetch correlation between two stocks
+            // Fetch correlation between both the stocks
             const pair = [selectedTickers[i], selectedTickers[j]];
             const data = await fetchCorrelationData(pair, minutes);
             
             matrix[i][j] = data.correlation;
-            matrix[j][i] = data.correlation; // Correlation matrix is symmetric
+            matrix[j][i] = data.correlation; // Correlation matrix is symmetric in nature
             
             // Store stock data
             stocksDataObj[pair[0]] = data.stocks[pair[0]];

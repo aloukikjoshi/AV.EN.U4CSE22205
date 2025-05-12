@@ -56,7 +56,7 @@ const StockChart = ({ data, averagePrice, ticker }) => {
     return null;
   };
   
-  // Add small buffer to y-axis range
+  // Buffer to y-axis range
   const minPrice = Math.min(...formattedData.map(item => item.price)) * 0.995;
   const maxPrice = Math.max(...formattedData.map(item => item.price)) * 1.005;
 
