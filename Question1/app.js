@@ -1,119 +1,146 @@
+// Load environment variables from .env
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// Base URL of the evaluation test server
-const TEST_SERVER_BASE = 'http://20.244.56.144/evaluation-service';
 
-// Utility: fetch JSON from test server
+// Base host and token for the evaluation test server
+const TEST_SERVER_HOST = '20.244.56.144';
+const AUTH_TOKEN = process.env.AUTH_TOKEN;
+if (!AUTH_TOKEN) {
+  console.error('AUTH_TOKEN not set. Please add your token to .env');
+  process.exit(1);
+}
+
+/**
+ * GET JSON from the test server, using Bearer auth
+ * @param {string} path - Full path including /evaluation-service prefix and query
+ * @returns {Promise<any>} Parsed JSON
+ */
 function fetchJSON(path) {
-  const url = TEST_SERVER_BASE + path;
+  const options = {
+    hostname: TEST_SERVER_HOST,
+    path,
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${AUTH_TOKEN}`,
+      'Accept': 'application/json'
+    }
+  };
+
   return new Promise((resolve, reject) => {
-    http.get(url, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
+    const req = http.request(options, (res) => {
+      let raw = '';
+      res.on('data', (chunk) => raw += chunk);
       res.on('end', () => {
         try {
-          resolve(JSON.parse(data));
+          const json = JSON.parse(raw.trim());
+          resolve(json);
         } catch (err) {
+          console.error('FetchJSON parse error:', raw);
           reject(err);
         }
       });
-    }).on('error', reject);
+    });
+    req.on('error', reject);
+    req.end();
   });
 }
 
-// Endpoint: Average Stock Price
+// ========================
+// Average Stock Price endpoint
+// ========================
 // GET /stocks/:ticker?minutes=<m>&aggregation=average
 app.get('/stocks/:ticker', async (req, res) => {
   const { ticker } = req.params;
-  const minutes = parseInt(req.query.minutes) || 60;
+  const minutes = parseInt(req.query.minutes, 10) || 60;
   const agg = (req.query.aggregation || '').toLowerCase();
   if (agg !== 'average') {
-    return res.status(400).json({ error: 'Unsupported aggregation' });
+    return res.status(400).json({ error: 'Only average aggregation supported' });
   }
 
   try {
-    // Fetch price history
-    const history = await fetchJSON(`/prices/${ticker}?minutes=${minutes}`);
-    // Compute average manually
+    // Fetch price history from test server
+    // Correct path: /evaluation-service/stocks/:ticker?minutes=<m>
+    const history = await fetchJSON(`/evaluation-service/stocks/${ticker}?minutes=${minutes}`);
+
+    if (!Array.isArray(history)) {
+      console.error('Unexpected history format:', history);
+      return res.status(500).json({ error: 'Invalid data from test server' });
+    }
+
+    // Compute average
     const prices = history.map(e => parseFloat(e.price));
-    const avg = prices.length
+    const average = prices.length
       ? prices.reduce((sum, p) => sum + p, 0) / prices.length
       : 0;
 
-    return res.json({
-      averageStockPrice: avg,
-      priceHistory: history
-    });
+    res.json({ averageStockPrice: average, priceHistory: history });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error fetching data' });
+    console.error('/stocks error:', err);
+    res.status(500).json({ error: 'Unable to fetch stock prices' });
   }
 });
 
-// Helper: statistics functions
-function mean(arr) {
-  return arr.reduce((s, v) => s + v, 0) / arr.length;
-}
+// =============================
+// Stock Correlation endpoint
+// =============================
+// GET /stockcorrelation?minutes=<m>&ticker=AAA&ticker=BBB
+
+function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
 function covariance(x, y) {
-  const n = x.length;
   const mX = mean(x), mY = mean(y);
-  let cov = 0;
-  for (let i = 0; i < n; i++) cov += (x[i] - mX) * (y[i] - mY);
-  return cov / (n - 1);
+  return x.map((v, i) => (v - mX) * (y[i] - mY)).reduce((a, b) => a + b, 0) / (x.length - 1);
 }
 function stdDev(arr) {
   const m = mean(arr);
-  const sumSq = arr.reduce((sum, v) => sum + Math.pow(v - m, 2), 0);
-  return Math.sqrt(sumSq / (arr.length - 1));
+  return Math.sqrt(arr.map(v => (v - m) ** 2).reduce((a, b) => a + b, 0) / (arr.length - 1));
 }
 function correlation(x, y) {
-  return covariance(x, y) / (stdDev(x) * stdDev(y));
+  const cov = covariance(x, y);
+  const sx = stdDev(x), sy = stdDev(y);
+  return sx && sy ? cov / (sx * sy) : 0;
 }
 
-// Endpoint: Correlation between two stocks
-// GET /stockcorrelation?minutes=<m>&ticker=AAA&ticker=BBB
 app.get('/stockcorrelation', async (req, res) => {
-  const minutes = parseInt(req.query.minutes) || 60;
-  let tickers = req.query.ticker;
-  if (!tickers || tickers.length !== 2) {
-    return res.status(400).json({ error: 'Provide exactly two tickers as ?ticker=AAA&ticker=BBB' });
+  const minutes = parseInt(req.query.minutes, 10) || 60;
+  const tickers = req.query.ticker;
+  if (!Array.isArray(tickers) || tickers.length !== 2) {
+    return res.status(400).json({ error: 'Provide exactly two tickers' });
   }
+
   try {
-    // Fetch both histories in parallel
-    const [hist1, hist2] = await Promise.all(
-      tickers.map(t => fetchJSON(`/prices/${t}?minutes=${minutes}`))
-    );
-    // Align by index (simple alignment)
-    const n = Math.min(hist1.length, hist2.length);
-    const p1 = hist1.slice(0, n).map(e => parseFloat(e.price));
-    const p2 = hist2.slice(0, n).map(e => parseFloat(e.price));
-    const corr = n > 1 ? correlation(p1, p2) : 0;
+    // Fetch price histories in parallel
+    const [histA, histB] = await Promise.all([
+      fetchJSON(`/evaluation-service/stocks/${tickers[0]}?minutes=${minutes}`),
+      fetchJSON(`/evaluation-service/stocks/${tickers[1]}?minutes=${minutes}`)
+    ]);
 
-    // Prepare response
-    const obj = {
-      correlation: corr,
-      stocks: {}
-    };
-    obj.stocks[tickers[0]] = {
-      averagePrice: mean(p1),
-      priceHistory: hist1
-    };
-    obj.stocks[tickers[1]] = {
-      averagePrice: mean(p2),
-      priceHistory: hist2
-    };
+    if (!Array.isArray(histA) || !Array.isArray(histB)) {
+      console.error('Invalid history formats:', histA, histB);
+      return res.status(500).json({ error: 'Invalid data from test server' });
+    }
 
-    res.json(obj);
+    // Align and compute correlation
+    const count = Math.min(histA.length, histB.length);
+    const pricesA = histA.slice(0, count).map(e => parseFloat(e.price));
+    const pricesB = histB.slice(0, count).map(e => parseFloat(e.price));
+    const corrVal = correlation(pricesA, pricesB);
+
+    res.json({
+      correlation: corrVal,
+      stocks: {
+        [tickers[0]]: { averagePrice: mean(pricesA), priceHistory: histA },
+        [tickers[1]]: { averagePrice: mean(pricesB), priceHistory: histB }
+      }
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error fetching data' });
+    console.error('/stockcorrelation error:', err);
+    res.status(500).json({ error: 'Unable to fetch correlation data' });
   }
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
