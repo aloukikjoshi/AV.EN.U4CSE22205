@@ -8,7 +8,6 @@ import Navbar from './components/Navbar';
 import StockPage from './pages/StockPage';
 import HeatmapPage from './pages/HeatmapPage';
 
-// Create a theme instance
 const theme = createTheme({
   palette: {
     primary: {

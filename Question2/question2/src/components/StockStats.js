@@ -17,7 +17,6 @@ const StockStats = ({ stockData }) => {
 
   const { ticker, averagePrice, priceHistory, stdDev } = stockData;
 
-  // Calculate additional statistics
   const latestPrice = priceHistory && priceHistory.length > 0 ? 
     parseFloat(priceHistory[priceHistory.length - 1].price) : 0;
   

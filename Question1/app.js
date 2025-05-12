@@ -1,11 +1,10 @@
-// Load environment variables from .env
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
 
 const app = express();
-// Enable CORS for frontend requests
+// CORS setup for React frontend
 app.use(cors());
 const PORT = process.env.PORT || 5000;
 

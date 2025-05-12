@@ -25,14 +25,13 @@ const StockChart = ({ data, averagePrice, ticker }) => {
     );
   }
 
-  // Format the timestamp for better readability
+  // Format timestamp and parse price values
   const formattedData = data.map(item => ({
     ...item,
     time: new Date(item.timestamp).toLocaleTimeString(),
     price: parseFloat(item.price)
   }));
 
-  // Custom tooltip to show detailed information when hovering over data points
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -57,7 +56,7 @@ const StockChart = ({ data, averagePrice, ticker }) => {
     return null;
   };
   
-  // Calculate price range for y-axis
+  // Add small buffer to y-axis range
   const minPrice = Math.min(...formattedData.map(item => item.price)) * 0.995;
   const maxPrice = Math.max(...formattedData.map(item => item.price)) * 1.005;
 

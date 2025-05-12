@@ -22,21 +22,19 @@ const CorrelationHeatmap = ({ correlationsData, tickers, onTickerHover }) => {
     );
   }
 
-  // Get color based on correlation value
+  // Color coding by correlation strength
   const getCorrelationColor = (value) => {
-    if (value >= 0.7) return theme.palette.success.main;      // Strong positive - green
-    if (value >= 0.3) return theme.palette.success.light;     // Moderate positive - light green
-    if (value >= -0.3) return theme.palette.grey[300];        // Weak correlation - grey
-    if (value >= -0.7) return theme.palette.warning.light;    // Moderate negative - orange
-    return theme.palette.error.main;                          // Strong negative - red
+    if (value >= 0.7) return theme.palette.success.main;
+    if (value >= 0.3) return theme.palette.success.light;
+    if (value >= -0.3) return theme.palette.grey[300];
+    if (value >= -0.7) return theme.palette.warning.light;
+    return theme.palette.error.main;
   };
 
   const getTextColor = (bgColor) => {
-    // If bg color is light, use dark text
     if (bgColor === theme.palette.grey[300] || bgColor === theme.palette.success.light || bgColor === theme.palette.warning.light) {
       return theme.palette.text.primary;
     }
-    // For dark backgrounds use white text
     return theme.palette.common.white;
   };
 

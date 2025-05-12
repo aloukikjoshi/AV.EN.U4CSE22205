@@ -26,10 +26,8 @@ const timeIntervals = [
 ];
 
 function HeatmapPage() {
-  // Get all available tickers
   const availableTickers = getAvailableTickers();
   
-  // State variables
   const [minutes, setMinutes] = useState(60);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,7 +38,7 @@ function HeatmapPage() {
   const [stockStats, setStockStats] = useState(null);
   const [selectedTickers, setSelectedTickers] = useState(availableTickers.slice(0, 5));
 
-  // Calculate standard deviation
+  // Standard deviation calculation
   const calculateStdDev = (prices, avg) => {
     if (!prices || prices.length === 0) return 0;
     const variance = prices.reduce((sum, price) => sum + Math.pow(price - avg, 2), 0) / prices.length;

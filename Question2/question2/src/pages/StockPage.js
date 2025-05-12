@@ -26,7 +26,6 @@ const timeIntervals = [
 ];
 
 const StockPage = () => {
-  // State variables
   const [ticker, setTicker] = useState('');
   const [minutes, setMinutes] = useState(60);
   const [stockData, setStockData] = useState(null);
@@ -34,7 +33,6 @@ const StockPage = () => {
   const [error, setError] = useState('');
   const [availableTickers] = useState(getAvailableTickers());
 
-  // Function to fetch stock data
   const handleFetchData = async () => {
     if (!ticker) {
       setError('Please select a stock ticker');
