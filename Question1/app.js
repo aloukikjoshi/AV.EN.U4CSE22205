@@ -2,9 +2,12 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Enable CORS for frontend requests
+app.use(cors());
+const PORT = process.env.PORT || 5000;
 
 // Base host and token for the evaluation test server
 const TEST_SERVER_HOST = '20.244.56.144';
@@ -48,10 +51,7 @@ function fetchJSON(path) {
     req.end();
   });
 }
-
-// ========================
 // Average Stock Price endpoint
-// ========================
 // GET /stocks/:ticker?minutes=<m>&aggregation=average
 app.get('/stocks/:ticker', async (req, res) => {
   const { ticker } = req.params;
@@ -83,10 +83,7 @@ app.get('/stocks/:ticker', async (req, res) => {
     res.status(500).json({ error: 'Unable to fetch stock prices' });
   }
 });
-
-// =============================
 // Stock Correlation endpoint
-// =============================
 // GET /stockcorrelation?minutes=<m>&ticker=AAA&ticker=BBB
 
 function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
